@@ -2,4 +2,3 @@
 RAG/
 .env
 csv_rag.py
-data.db
