@@ -4,4 +4,3 @@ langchain_chroma
 langchain_openai
 langchain_core
 streamlit
-dotenv
