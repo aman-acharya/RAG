@@ -1,6 +1,7 @@
 langchain
 langchain_community
 langchain_chroma
-langchain_openai
+langchain-huggingface
 langchain_core
 streamlit
+pypdf   
