@@ -45,9 +45,11 @@ if uploaded_file is not None:
         # Load the embeddings
         embeddings = load_embeddings()
 
-        persist_directory = 'temp_dir'
+        persist_directory = tempfile.mkdtemp()
 
-
+        if 'persist_directory' not in st.session_state:
+            st.session_state['persist_directory'] = persist_directory
+            
         # Load the vector store
         vector_store = Chroma.from_documents(
             documents=document,
@@ -65,10 +67,15 @@ if uploaded_file is not None:
             chain_type= "stuff",
         )
 
-        # Load the prompt
         prompt = st.text_input("Enter the prompt : ")
+
+        if 'generate_answer' not in st.session_state:
+            st.session_state['generate_answer'] = False
         
         if st.button("Generate Answer"):
+            st.session_state['generate_answer'] = not st.session_state['generate_answer']
+
+        if st.session_state['generate_answer']:
             if prompt is not None:
                 answer = chain.invoke({'query': prompt})
                 st.write(answer['result'])
