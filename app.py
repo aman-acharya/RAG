@@ -1,79 +1,79 @@
 import streamlit as st
 import tempfile
-from langchain_community.document_loaders import  PyPDFLoader
+from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores import FAISS
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+import openai
 from langchain.chains import RetrievalQA
 
-#function to load llm
-def load_llm():
+# function to load llm
+def load_llm(api_key):
     llm = ChatOpenAI(
-        model = "gpt-4-turbo",
+        model="gpt-4-turbo",
         temperature=0,
         verbose=True,
-        streaming = True,
-        api_key= api
+        streaming=True,
+        api_key=api_key
     )
     return llm
 
 # @st.cache_data
-def load_embeddings():
-    embeddings = OpenAIEmbeddings()
+def load_embeddings(api_key):
+    embeddings = OpenAIEmbeddings(api_key=api_key)
     return embeddings
 
+# try:
 # Load the pdf file
 uploaded_file = st.sidebar.file_uploader("Choose a file", type=['pdf'], accept_multiple_files=False)
 
-api = st.sidebar.text_input("Enter the openai api key : ", type="password")
+if uploaded_file:
+    api_key = st.sidebar.text_input("Enter the OpenAI API key:", type="password")
 
-if uploaded_file is not None:
-    with tempfile.NamedTemporaryFile(delete=False) as temp:
-        temp.write(uploaded_file.getvalue())
-        pdf_path = temp.name
+    if api_key:
 
-        # Load the pdf file
-        loader = PyPDFLoader(
-            file_path=pdf_path
-        )
+        with tempfile.NamedTemporaryFile(delete=False) as temp:
+            temp.write(uploaded_file.getvalue())
+            pdf_path = temp.name
 
-        # Load the document
-        document = loader.load()
+            # Load the pdf file
+            loader = PyPDFLoader(file_path=pdf_path)
 
-        # Load the llm
-        llm = load_llm()
+            # Load the document
+            document = loader.load()
 
-        # Load the embeddings
-        embeddings = load_embeddings()
-            
-        # Load the vector store
-        vector_store = FAISS.from_documents(
-            documents=document,
-            embedding=embeddings
-        )
+            # Load the llm
+            llm = load_llm(api_key=api_key)
+            # Load the embeddings
+            embeddings = load_embeddings(api_key=api_key)
 
-        # Load the QA model
-        retriver = vector_store.as_retriever()
+            # Load the vector store
+            vector_store = FAISS.from_documents(documents=document, embedding=embeddings)
 
-        # Load the QA model
-        chain = RetrievalQA.from_chain_type(
-            retriever= retriver,
-            llm = llm,
-            chain_type= "stuff"
-        )
+            # Load the QA model
+            retriever = vector_store.as_retriever()
 
-        prompt = st.text_input("Enter the prompt : ")
+            # Load the QA model
+            chain = RetrievalQA.from_chain_type(retriever=retriever, llm=llm, chain_type="stuff")
 
-        if 'generate_answer' not in st.session_state:
-            st.session_state['generate_answer'] = False
-        
-        if st.button("Generate Answer"):
-            st.session_state['generate_answer'] = not st.session_state['generate_answer']
+            prompt = st.text_input("Enter the prompt:")
 
-        if st.session_state['generate_answer']:
-            if prompt is not None:
-                answer = chain.invoke({'query': prompt})
-                st.write(answer['result'])
-            else:
-                st.info(":warning: Please enter the prompt")
+            if 'generate_answer' not in st.session_state:
+                st.session_state['generate_answer'] = False
+
+            if st.button("Generate Answer"):
+                st.session_state['generate_answer'] = not st.session_state['generate_answer']
+
+            if st.session_state['generate_answer']:
+                if prompt:
+                    answer = chain.invoke({'query': prompt})
+                    st.write(answer['result'])
+                else:
+                    st.info(":warning: Please enter the prompt")
+    else:
+        st.info(":warning: Please enter the OpenAI API key")
+
 else:
-    st.info(":warning: Please upload the pdf file")
+    st.info(":warning: Please upload the PDF file")
+
+# except Exception as e:
+#     st.info(f":warning: An error occurred: {e}")
