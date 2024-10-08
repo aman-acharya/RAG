@@ -1,7 +1,7 @@
 import streamlit as st
 import tempfile
 from langchain_community.document_loaders import  PyPDFLoader
-from langchain_chroma.vectorstores import Chroma
+from langchain_community.vectorstores import FAISS
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain.chains import RetrievalQA
 
@@ -44,17 +44,11 @@ if uploaded_file is not None:
 
         # Load the embeddings
         embeddings = load_embeddings()
-
-        persist_directory = tempfile.mkdtemp()
-
-        if 'persist_directory' not in st.session_state:
-            st.session_state['persist_directory'] = persist_directory
             
         # Load the vector store
-        vector_store = Chroma.from_documents(
+        vector_store = FAISS.from_documents(
             documents=document,
-            embedding=embeddings,
-            persist_directory= persist_directory
+            embedding=embeddings
         )
 
         # Load the QA model
@@ -64,7 +58,7 @@ if uploaded_file is not None:
         chain = RetrievalQA.from_chain_type(
             retriever= retriver,
             llm = llm,
-            chain_type= "stuff",
+            chain_type= "stuff"
         )
 
         prompt = st.text_input("Enter the prompt : ")
@@ -80,6 +74,6 @@ if uploaded_file is not None:
                 answer = chain.invoke({'query': prompt})
                 st.write(answer['result'])
             else:
-                st.info("Please enter the prompt")
+                st.info(":warning: Please enter the prompt")
 else:
-    st.info("Please upload the pdf file")
+    st.info(":warning: Please upload the pdf file")
